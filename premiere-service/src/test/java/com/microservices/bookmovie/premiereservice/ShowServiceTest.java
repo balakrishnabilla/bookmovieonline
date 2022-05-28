@@ -12,11 +12,14 @@ import com.microservices.bookmovie.premiereservice.repo.ShowRepository;
 import com.microservices.bookmovie.premiereservice.repo.TheatreRepository;
 import com.microservices.bookmovie.premiereservice.service.ShowService;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import java.text.ParseException;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -33,6 +36,10 @@ public class ShowServiceTest {
   private ShowService showService;
   private static final ObjectMapper mapper = new ObjectMapper();
 
+
+  @Rule
+  public ExpectedException expected = ExpectedException.none();
+
   @Before
   public void setUp() {
     showService = new ShowService(theatreRepository, showRepository);
@@ -42,6 +49,7 @@ public class ShowServiceTest {
   public void contextLoads() {}
 
   @Test
+
   public void testGetShowsByCityNMovieNDate() throws Exception {
     // input
     List<Theatre> list = new ArrayList<>();
@@ -61,6 +69,22 @@ public class ShowServiceTest {
   }
 
   @Test
+  public void testGetShowsByCityNMovieNDateException() throws Exception {
+
+    expected.expect(ParseException.class);
+    expected.expectMessage(" Missing query parameters");
+
+    // input
+    List<Theatre> list = new ArrayList<>();
+    List<Show> shows = new ArrayList<>();
+    shows.add(new Show(3L, 1, LocalDate.of(2022, 05, 21), "11:30", 200, 120));
+    list.add(new Theatre(1L, "Pheonix", 43, 123, shows));
+
+    when(theatreRepository.findByCityIdAndMovieId(anyInt(), anyInt())).thenReturn(list);
+    showService.getShows(0, 0, LocalDate.of(2022, 05, 21));
+  }
+
+  @Test
   public void testGetShowsByTheater() throws Exception {
     // input
     List<Show> shows = new ArrayList<>();
@@ -73,6 +97,19 @@ public class ShowServiceTest {
     assertEquals("2:30", responseList.get(0).getShowTime());
     assertEquals(new Long(3), responseList.get(0).getShowId());
     assertEquals(1, responseList.get(0).getTheatreId());
+  }
+
+
+  @Test
+  public void testGetShowsByTheaterException() throws Exception {
+    expected.expect(ParseException.class);
+    expected.expectMessage(" Missing query parameters");
+
+    // input
+    List<Show> shows = new ArrayList<>();
+    when(showRepository.findByTheatreId(anyInt())).thenReturn(shows);
+    showService.getShows(0);
+
   }
 
   private String getJsonString(Object input) throws JsonProcessingException {
